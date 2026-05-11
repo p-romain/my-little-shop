@@ -1,0 +1,210 @@
+App\Entity\Shop:
+    shop_paris:
+        name: 'Paris Champs-Elysees'
+        latitude: 48.870800
+        longitude: 2.305900
+        address: '18 Avenue des Champs-Elysees, 75008 Paris, France'
+        manager: '@user_manager_1'
+
+    shop_lyon:
+        name: 'Lyon'
+        latitude: 45.757800
+        longitude: 4.832000
+        address: '12 Place Bellecour, 69002 Lyon, France'
+        manager: '@user_manager_2'
+
+    shop_marseille:
+        name: 'Marseille'
+        latitude: 43.295100
+        longitude: 5.374200
+        address: '34 Quai du Port, 13002 Marseille, France'
+        manager: '@user_manager_1'
+
+    shop_bordeaux:
+        name: 'Bordeaux'
+        latitude: 44.839700
+        longitude: -0.575900
+        address: '92 Rue Sainte-Catherine, 33000 Bordeaux, France'
+        manager: '@user_manager_2'
+
+    shop_lille:
+        name: 'Lille'
+        latitude: 50.637200
+        longitude: 3.063300
+        address: '7 Grand Place, 59000 Lille, France'
+        manager: '@user_manager_1'
+
+    shop_nantes:
+        name: 'Nantes'
+        latitude: 47.214900
+        longitude: -1.557400
+        address: '4 Place du Commerce, 44000 Nantes, France'
+        manager: '@user_manager_2'
+
+    shop_new_york:
+        name: 'New York SoHo'
+        latitude: 40.724000
+        longitude: -74.000700
+        address: '120 Spring Street, New York, NY 10012, United States'
+        manager: '@user_manager_1'
+
+    shop_los_angeles:
+        name: 'Los Angeles Melrose'
+        latitude: 34.083700
+        longitude: -118.361400
+        address: '8400 Melrose Avenue, Los Angeles, CA 90069, United States'
+        manager: '@user_manager_2'
+
+    shop_chicago:
+        name: 'Chicago'
+        latitude: 41.895500
+        longitude: -87.624400
+        address: '625 North Michigan Avenue, Chicago, IL 60611, United States'
+        manager: '@user_manager_1'
+
+    shop_san_francisco:
+        name: 'San Francisco'
+        latitude: 37.788000
+        longitude: -122.407500
+        address: '170 O Farrell Street, San Francisco, CA 94102, United States'
+        manager: '@user_manager_2'
+
+    shop_miami:
+        name: 'Miami'
+        latitude: 25.813100
+        longitude: -80.193800
+        address: '140 NE 39th Street, Miami, FL 33137, United States'
+        manager: '@user_manager_1'
+
+    shop_seattle:
+        name: 'Seattle'
+        latitude: 47.609700
+        longitude: -122.342500
+        address: '85 Pike Street, Seattle, WA 98101, United States'
+        manager: '@user_manager_2'
+
+    shop_london:
+        name: 'London Covent Garden'
+        latitude: 51.512900
+        longitude: -0.124300
+        address: '24 King Street, London WC2E 8JD, United Kingdom'
+        manager: '@user_manager_1'
+
+    shop_manchester:
+        name: 'Manchester'
+        latitude: 53.481200
+        longitude: -2.247600
+        address: '54 King Street, Manchester M2 4LQ, United Kingdom'
+        manager: '@user_manager_2'
+
+    shop_berlin:
+        name: 'Berlin'
+        latitude: 52.520800
+        longitude: 13.409500
+        address: '42 Alte Schoenhauser Strasse, 10119 Berlin, Germany'
+        manager: '@user_manager_1'
+
+    shop_munich:
+        name: 'Munich'
+        latitude: 48.137400
+        longitude: 11.575500
+        address: '16 Kaufingerstrasse, 80331 Munich, Germany'
+        manager: '@user_manager_2'
+
+    shop_madrid:
+        name: 'Madrid'
+        latitude: 40.420300
+        longitude: -3.705800
+        address: '32 Gran Via, 28013 Madrid, Spain'
+        manager: '@user_manager_1'
+
+    shop_barcelona:
+        name: 'Barcelona'
+        latitude: 41.391700
+        longitude: 2.164900
+        address: '58 Passeig de Gracia, 08007 Barcelona, Spain'
+        manager: '@user_manager_2'
+
+    shop_milan:
+        name: 'Milan'
+        latitude: 45.471900
+        longitude: 9.187800
+        address: '10 Via Brera, 20121 Milan, Italy'
+        manager: '@user_manager_1'
+
+    shop_rome:
+        name: 'Rome'
+        latitude: 41.902300
+        longitude: 12.478300
+        address: '210 Via del Corso, 00186 Rome, Italy'
+        manager: '@user_manager_2'
+
+    shop_amsterdam:
+        name: 'Amsterdam'
+        latitude: 52.370200
+        longitude: 4.884000
+        address: '21 Huidenstraat, 1016 ER Amsterdam, Netherlands'
+        manager: '@user_manager_1'
+
+    shop_brussels:
+        name: 'Brussels'
+        latitude: 50.827700
+        longitude: 4.358600
+        address: '154 Avenue Louise, 1050 Brussels, Belgium'
+        manager: '@user_manager_2'
+
+    shop_copenhagen:
+        name: 'Copenhagen'
+        latitude: 55.678600
+        longitude: 12.578400
+        address: '18 Stroget, 1160 Copenhagen, Denmark'
+        manager: '@user_manager_1'
+
+    shop_stockholm:
+        name: 'Stockholm'
+        latitude: 59.334500
+        longitude: 18.073200
+        address: '12 Biblioteksgatan, 111 46 Stockholm, Sweden'
+        manager: '@user_manager_2'
+
+    shop_dublin:
+        name: 'Dublin'
+        latitude: 53.342200
+        longitude: -6.260600
+        address: '45 Grafton Street, Dublin 2, Ireland'
+        manager: '@user_manager_1'
+
+    shop_lisbon:
+        name: 'Lisbon'
+        latitude: 38.710900
+        longitude: -9.141700
+        address: '28 Rua Garrett, 1200-204 Lisbon, Portugal'
+        manager: '@user_manager_2'
+
+    shop_vienna:
+        name: 'Vienna'
+        latitude: 48.208700
+        longitude: 16.369800
+        address: '19 Graben, 1010 Vienna, Austria'
+        manager: '@user_manager_1'
+
+    shop_zurich:
+        name: 'Zurich'
+        latitude: 47.371700
+        longitude: 8.538600
+        address: '64 Bahnhofstrasse, 8001 Zurich, Switzerland'
+        manager: '@user_manager_2'
+
+    shop_prague:
+        name: 'Prague'
+        latitude: 50.087100
+        longitude: 14.420900
+        address: '15 Celetna, 110 00 Prague, Czech Republic'
+        manager: '@user_manager_1'
+
+    shop_warsaw:
+        name: 'Warsaw'
+        latitude: 52.234200
+        longitude: 21.019000
+        address: '38 Nowy Swiat, 00-363 Warsaw, Poland'
+        manager: '@user_manager_2'

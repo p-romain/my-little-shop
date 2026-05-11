@@ -1,0 +1,150 @@
+App\Entity\Stock:
+    stock_paris_{1..10}:
+        product: '@product_<current()>'
+        shop: '@shop_paris'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_lyon_{4..13}:
+        product: '@product_<current()>'
+        shop: '@shop_lyon'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_marseille_{7..16}:
+        product: '@product_<current()>'
+        shop: '@shop_marseille'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_bordeaux_{10..19}:
+        product: '@product_<current()>'
+        shop: '@shop_bordeaux'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_lille_{13..22}:
+        product: '@product_<current()>'
+        shop: '@shop_lille'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_nantes_{16..25}:
+        product: '@product_<current()>'
+        shop: '@shop_nantes'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_new_york_{19..28}:
+        product: '@product_<current()>'
+        shop: '@shop_new_york'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_los_angeles_{22..31}:
+        product: '@product_<current()>'
+        shop: '@shop_los_angeles'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_chicago_{25..34}:
+        product: '@product_<current()>'
+        shop: '@shop_chicago'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_san_francisco_{28..37}:
+        product: '@product_<current()>'
+        shop: '@shop_san_francisco'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_miami_{31..40}:
+        product: '@product_<current()>'
+        shop: '@shop_miami'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_seattle_{34..43}:
+        product: '@product_<current()>'
+        shop: '@shop_seattle'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_london_{37..46}:
+        product: '@product_<current()>'
+        shop: '@shop_london'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_manchester_{40..49}:
+        product: '@product_<current()>'
+        shop: '@shop_manchester'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_berlin_{43..52}:
+        product: '@product_<current()>'
+        shop: '@shop_berlin'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_munich_{46..55}:
+        product: '@product_<current()>'
+        shop: '@shop_munich'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_madrid_{49..58}:
+        product: '@product_<current()>'
+        shop: '@shop_madrid'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_barcelona_{52..61}:
+        product: '@product_<current()>'
+        shop: '@shop_barcelona'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_milan_{55..64}:
+        product: '@product_<current()>'
+        shop: '@shop_milan'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_rome_{58..67}:
+        product: '@product_<current()>'
+        shop: '@shop_rome'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_amsterdam_{61..70}:
+        product: '@product_<current()>'
+        shop: '@shop_amsterdam'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_brussels_{64..73}:
+        product: '@product_<current()>'
+        shop: '@shop_brussels'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_copenhagen_{67..76}:
+        product: '@product_<current()>'
+        shop: '@shop_copenhagen'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_stockholm_{70..79}:
+        product: '@product_<current()>'
+        shop: '@shop_stockholm'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_dublin_{73..82}:
+        product: '@product_<current()>'
+        shop: '@shop_dublin'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_lisbon_{76..85}:
+        product: '@product_<current()>'
+        shop: '@shop_lisbon'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_vienna_{79..88}:
+        product: '@product_<current()>'
+        shop: '@shop_vienna'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_zurich_{82..91}:
+        product: '@product_<current()>'
+        shop: '@shop_zurich'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_prague_{85..94}:
+        product: '@product_<current()>'
+        shop: '@shop_prague'
+        quantity: '<numberBetween(5, 200)>'
+
+    stock_warsaw_{88..100}:
+        product: '@product_<current()>'
+        shop: '@shop_warsaw'
+        quantity: '<numberBetween(5, 200)>'

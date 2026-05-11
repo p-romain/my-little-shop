@@ -1,0 +1,24 @@
+meta {
+  name: Update Shop
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/api/shops/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{jwt}}
+}
+
+body:json {
+  {
+    "name": "Paris Louvre",
+    "address": "99 Rue de Rivoli, 75001 Paris, France",
+    "latitude": 48.8611473,
+    "longitude": 2.3380277
+  }
+}

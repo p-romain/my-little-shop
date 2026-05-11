@@ -1,0 +1,10 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: My Little Shop API
+            description: REST API for shops, users, products and browser events.
+            version: 1.0.0
+    areas:
+        default:
+            path_patterns:
+                - ^/api(?!/doc$)

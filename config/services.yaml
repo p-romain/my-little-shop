@@ -1,0 +1,33 @@
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/DataFixtures/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Controller\:
+        resource: '../src/Controller/'
+        public: true
+        tags: ['controller.service_arguments']
+
+when@dev:
+    services:
+        App\DataFixtures\:
+            resource: '../src/DataFixtures/'
+            autowire: true
+            autoconfigure: true
+
+when@test:
+    services:
+        App\DataFixtures\:
+            resource: '../src/DataFixtures/'
+            autowire: true
+            autoconfigure: true

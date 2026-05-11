@@ -1,0 +1,12 @@
+App\Entity\User:
+    user_admin:
+        email: admin@example.com
+        plainPassword: password
+
+    user_manager_1:
+        email: manager1@example.com
+        plainPassword: password
+
+    user_manager_2:
+        email: manager2@example.com
+        plainPassword: password
