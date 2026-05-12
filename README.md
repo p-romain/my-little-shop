@@ -98,7 +98,6 @@ Elles permettent d'exprimer la **formule de Haversine** entièrement en DQL :
 Les tests d'intégration étendent `ApiTestCase` qui :
 - Crée un client HTTP Symfony (`WebTestCase`)
 - S'appuie sur `dama/doctrine-test-bundle` pour isoler les tests via une connexion statique en environnement de test
-- Expose des helpers de création de fixtures de test (`createUser`, `createShop`, `createProduct`, `createStock`)
 
 La méthode `assertShape(array $expectedKeys, array $actual)` vérifie qu'une réponse JSON contient **exactement** les clés attendues — ni plus, ni moins. Cela garantit qu'aucune propriété sensible (ex. hash de mot de passe) ne peut fuiter sans que les tests le détectent.
 
