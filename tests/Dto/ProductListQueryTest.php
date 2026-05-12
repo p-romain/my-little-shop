@@ -29,7 +29,7 @@ final class ProductListQueryTest extends KernelTestCase
         $query->shops = $shopIds;
 
         self::assertSame(
-            ['shops must contain positive integer ids only.'],
+            ['Shops must contain positive integer ids only.'],
             $this->violationMessages($query),
         );
     }

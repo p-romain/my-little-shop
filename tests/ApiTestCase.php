@@ -76,6 +76,28 @@ abstract class ApiTestCase extends WebTestCase
     }
 
     /**
+     * @param array<string, string> $expectedViolations
+     */
+    protected function assertValidationErrorPayload(array $expectedViolations): void
+    {
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertIsArray($data);
+        $this->assertShape(['error', 'violations'], $data, 'validation error');
+        self::assertSame('Validation failed.', $data['error']);
+        self::assertIsArray($data['violations']);
+        self::assertCount(count($expectedViolations), $data['violations']);
+
+        foreach ($data['violations'] as $index => $violation) {
+            self::assertIsArray($violation);
+            $this->assertShape(['propertyPath', 'message'], $violation, "violation {$index}");
+            self::assertIsString($violation['propertyPath']);
+            self::assertIsString($violation['message']);
+        }
+
+        self::assertSame($expectedViolations, array_column($data['violations'], 'message', 'propertyPath'));
+    }
+
+    /**
      * Representative SQL injection payloads for filters and JSON payload fields.
      *
      * @return iterable<string, array{string}>

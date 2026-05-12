@@ -54,8 +54,8 @@ final class ShopListQueryTest extends KernelTestCase
     public function testPartialLocationFilterFailsValidation(ShopListQuery $query): void
     {
         self::assertContains(
-            'latitude, longitude and radius must all be provided together.',
-            $this->violationMessages($query),
+            'Latitude, longitude and radius must all be provided together.',
+            $this->violationMap($query),
         );
     }
 
@@ -67,8 +67,8 @@ final class ShopListQueryTest extends KernelTestCase
         $query->radius = 0;
 
         self::assertSame(
-            ['latitude and longitude must be numbers, radius must be a positive integer.'],
-            $this->violationMessages($query),
+            ['radius' => 'Latitude and longitude must be numbers, radius must be a positive integer.'],
+            $this->violationMap($query),
         );
     }
 
@@ -98,12 +98,23 @@ final class ShopListQueryTest extends KernelTestCase
      */
     private function violationMessages(ShopListQuery $query): array
     {
+        return array_values($this->violationMap($query));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function violationMap(ShopListQuery $query): array
+    {
         $validator = static::getContainer()->get(ValidatorInterface::class);
         self::assertInstanceOf(ValidatorInterface::class, $validator);
 
-        return array_map(
-            static fn ($violation): string => (string) $violation->getMessage(),
-            iterator_to_array($validator->validate($query)),
-        );
+        $messages = [];
+
+        foreach ($validator->validate($query) as $violation) {
+            $messages[(string) $violation->getPropertyPath()] = (string) $violation->getMessage();
+        }
+
+        return $messages;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Dto;
 
+use App\Validator\ManagerExists;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final class ShopInput
@@ -20,5 +21,6 @@ final class ShopInput
 
     #[Assert\NotNull(message: 'Manager is required.')]
     #[Assert\Positive(message: 'Manager is required.')]
+    #[ManagerExists]
     public ?int $managerId = null;
 }

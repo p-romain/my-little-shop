@@ -24,7 +24,7 @@ final class ShopListQuery
 
     public ?float $longitude = null;
 
-    #[Assert\Positive(message: 'latitude and longitude must be numbers, radius must be a positive integer.')]
+    #[Assert\Positive(message: 'Latitude and longitude must be numbers, radius must be a positive integer.')]
     public ?int $radius = null;
 
     #[Assert\Callback]
@@ -44,7 +44,7 @@ final class ShopListQuery
             }
 
             $context
-                ->buildViolation('latitude, longitude and radius must all be provided together.')
+                ->buildViolation('Latitude, longitude and radius must all be provided together.')
                 ->atPath($property)
                 ->addViolation()
             ;

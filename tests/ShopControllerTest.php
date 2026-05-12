@@ -106,9 +106,11 @@ final class ShopControllerTest extends ApiTestCase
         ], [], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
-        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame('Validation failed.', $data['error']);
-        self::assertArrayHasKey('latitude', array_column($data['violations'], 'message', 'propertyPath'));
+        $this->assertValidationErrorPayload([
+            'latitude' => 'This value should be of type float.',
+            'longitude' => 'This value should be of type float.',
+            'radius' => 'This value should be of type int.',
+        ]);
     }
 
     public function testListFilterByLocationReturnsNearbyShopsWithDistance(): void
@@ -141,11 +143,9 @@ final class ShopControllerTest extends ApiTestCase
         ], [], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
-        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame('Validation failed.', $data['error']);
-        self::assertSame([
-            'radius' => 'latitude, longitude and radius must all be provided together.',
-        ], array_column($data['violations'], 'message', 'propertyPath'));
+        $this->assertValidationErrorPayload([
+            'radius' => 'Latitude, longitude and radius must all be provided together.',
+        ]);
     }
 
     public function testGetReturnsShop(): void
@@ -207,15 +207,13 @@ final class ShopControllerTest extends ApiTestCase
         ], '{}');
 
         self::assertResponseStatusCodeSame(400);
-        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame('Validation failed.', $data['error']);
-        self::assertSame([
+        $this->assertValidationErrorPayload([
             'name' => 'Name is required.',
             'address' => 'Address is required.',
             'latitude' => 'Latitude is required.',
             'longitude' => 'Longitude is required.',
             'managerId' => 'Manager is required.',
-        ], array_column($data['violations'], 'message', 'propertyPath'));
+        ]);
     }
 
     public function testCreateShopWithBlankFormPayloadReturnsFieldValidationViolations(): void
@@ -231,14 +229,13 @@ final class ShopControllerTest extends ApiTestCase
         ], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
-        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertSame([
+        $this->assertValidationErrorPayload([
             'name' => 'Name is required.',
             'address' => 'Address is required.',
             'latitude' => 'Latitude is required.',
             'longitude' => 'Longitude is required.',
             'managerId' => 'Manager is required.',
-        ], array_column($data['violations'], 'message', 'propertyPath'));
+        ]);
     }
 
     public function testCreateShopWithMissingNameReturnsBadRequest(): void
@@ -254,6 +251,9 @@ final class ShopControllerTest extends ApiTestCase
         ], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
+        $this->assertValidationErrorPayload([
+            'name' => 'Name is required.',
+        ]);
     }
 
     public function testCreateShopWithMissingAddressReturnsBadRequest(): void
@@ -269,6 +269,9 @@ final class ShopControllerTest extends ApiTestCase
         ], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
+        $this->assertValidationErrorPayload([
+            'address' => 'Address is required.',
+        ]);
     }
 
     public function testCreateShopWithInvalidManagerReturnsBadRequest(): void
@@ -284,6 +287,9 @@ final class ShopControllerTest extends ApiTestCase
         ], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
+        $this->assertValidationErrorPayload([
+            'managerId' => 'Manager not found.',
+        ]);
     }
 
     /**
@@ -326,6 +332,9 @@ final class ShopControllerTest extends ApiTestCase
         ], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
+        $this->assertValidationErrorPayload([
+            'managerId' => 'This value should be of type int|null.',
+        ]);
         self::assertSame(self::FIXTURE_SHOP_COUNT, $this->entityManager->getRepository(\App\Entity\Shop::class)->count([]));
     }
 
@@ -386,6 +395,10 @@ final class ShopControllerTest extends ApiTestCase
         ], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
+        $this->assertValidationErrorPayload([
+            'latitude' => 'Latitude is required.',
+            'longitude' => 'Longitude is required.',
+        ]);
     }
 
     /**
@@ -431,6 +444,9 @@ final class ShopControllerTest extends ApiTestCase
         ], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
+        $this->assertValidationErrorPayload([
+            'managerId' => 'This value should be of type int|null.',
+        ]);
         $this->entityManager->clear();
         $storedShop = $this->entityManager->getRepository(\App\Entity\Shop::class)->find($shop->getId());
         self::assertSame($originalName, $storedShop?->getName());
