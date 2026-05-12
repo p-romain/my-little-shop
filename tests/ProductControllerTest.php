@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests;
 
+use App\Entity\Product;
+
 final class ProductControllerTest extends ApiTestCase
 {
     // Canonical shapes — the single source of truth for what the API exposes.
@@ -13,9 +15,12 @@ final class ProductControllerTest extends ApiTestCase
     private const STOCK_SHOP_KEYS = ['id', 'name', 'address'];
 
     // Fixture totals (see fixtures/products.yaml, fixtures/stocks.yaml).
-    private const FIXTURE_PRODUCT_COUNT = 100;
+    // 100 generated products + 1 fixed product_zero_stock = 101.
+    private const FIXTURE_PRODUCT_COUNT = 101;
     private const FIXTURE_PAGE_SIZE = 30;
-    // shop_paris fixture stocks reference products 1..10.
+    private const FIXTURE_PAGE_COUNT = 4;
+    private const FIXTURE_LAST_PAGE_COUNT = self::FIXTURE_PRODUCT_COUNT - (self::FIXTURE_PAGE_COUNT - 1) * self::FIXTURE_PAGE_SIZE;
+    // shop_paris fixture stocks reference products 1..10 (product_zero_stock has a zero-quantity stock there, excluded).
     private const FIXTURE_PARIS_PRODUCT_COUNT = 10;
 
     public function testListRequiresAuthentication(): void
@@ -27,7 +32,7 @@ final class ProductControllerTest extends ApiTestCase
 
     public function testListShape(): void
     {
-        $token = $this->getToken('admin@example.com');
+        $token = $this->getToken();
 
         $this->client->request('GET', '/api/products', [], [], $this->authServer($token));
 
@@ -42,7 +47,7 @@ final class ProductControllerTest extends ApiTestCase
 
     public function testListReturnsProductsWithStocks(): void
     {
-        $token = $this->getToken('admin@example.com');
+        $token = $this->getToken();
 
         $this->client->request('GET', '/api/products', [], [], $this->authServer($token));
 
@@ -50,14 +55,14 @@ final class ProductControllerTest extends ApiTestCase
         $data = json_decode((string) $this->client->getResponse()->getContent(), true);
         self::assertCount(self::FIXTURE_PAGE_SIZE, $data['items']);
         self::assertSame(self::FIXTURE_PRODUCT_COUNT, $data['total']);
-        self::assertSame(4, $data['pages']);
+        self::assertSame(self::FIXTURE_PAGE_COUNT, $data['pages']);
         self::assertNotEmpty($data['items'][0]['stocks']);
         self::assertGreaterThan(0, $data['items'][0]['stocks'][0]['quantity']);
     }
 
     public function testListFilterByShop(): void
     {
-        $token = $this->getToken('admin@example.com');
+        $token = $this->getToken();
         $shop = $this->getShop('Paris Champs-Elysees');
 
         $this->client->request('GET', '/api/products', ['shops' => [$shop->getId()]], [], $this->authServer($token));
@@ -76,7 +81,7 @@ final class ProductControllerTest extends ApiTestCase
      */
     public function testListShopFilterRejectsSqlInjectionPayloads(string $payload): void
     {
-        $token = $this->getToken('admin@example.com');
+        $token = $this->getToken();
 
         $this->client->request('GET', '/api/products', ['shops' => [$payload]], [], $this->authServer($token));
 
@@ -85,49 +90,39 @@ final class ProductControllerTest extends ApiTestCase
 
     public function testStocksWithZeroQuantityAreExcluded(): void
     {
-        $token = $this->getToken('admin@example.com');
+        $token = $this->getToken();
+        $product = $this->entityManager->getRepository(Product::class)->findOneBy(['name' => 'Zero Stock Product']);
+        self::assertNotNull($product, 'Fixture product "Zero Stock Product" should be loaded.');
 
-        // Pick the lowest-id fixture product and zero out all of its stocks.
-        // DAMA wraps the test in a transaction so this rolls back after the run.
-        $product = $this->entityManager->getRepository(\App\Entity\Product::class)
-            ->createQueryBuilder('p')
-            ->orderBy('p.id', 'ASC')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getSingleResult();
-        foreach ($product->getStocks() as $stock) {
-            $stock->setQuantity(0);
-        }
-        $this->entityManager->flush();
-
-        $this->client->request('GET', '/api/products', [], [], $this->authServer($token));
+        // product_zero_stock has the highest id (added last in fixtures) → last page in id-ASC order.
+        $this->client->request('GET', '/api/products', ['page' => self::FIXTURE_PAGE_COUNT], [], $this->authServer($token));
 
         self::assertResponseIsSuccessful();
         $data = json_decode((string) $this->client->getResponse()->getContent(), true);
 
-        $modified = null;
+        $zeroStockItem = null;
         foreach ($data['items'] as $item) {
             if ($item['id'] === $product->getId()) {
-                $modified = $item;
+                $zeroStockItem = $item;
                 break;
             }
         }
-        self::assertNotNull($modified, 'Product with zeroed stocks should still appear in the listing.');
-        self::assertCount(0, $modified['stocks']);
+        self::assertNotNull($zeroStockItem, 'Product with zero-quantity stocks should still appear in the listing.');
+        self::assertSame([], $zeroStockItem['stocks']);
     }
 
     public function testListPagination(): void
     {
-        $token = $this->getToken('admin@example.com');
+        $token = $this->getToken();
 
         $this->client->request('GET', '/api/products', ['page' => 1], [], $this->authServer($token));
         $page1 = json_decode((string) $this->client->getResponse()->getContent(), true);
         self::assertCount(self::FIXTURE_PAGE_SIZE, $page1['items']);
         self::assertSame(self::FIXTURE_PRODUCT_COUNT, $page1['total']);
-        self::assertSame(4, $page1['pages']);
+        self::assertSame(self::FIXTURE_PAGE_COUNT, $page1['pages']);
 
-        $this->client->request('GET', '/api/products', ['page' => 4], [], $this->authServer($token));
-        $page4 = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertCount(self::FIXTURE_PRODUCT_COUNT - 3 * self::FIXTURE_PAGE_SIZE, $page4['items']);
+        $this->client->request('GET', '/api/products', ['page' => self::FIXTURE_PAGE_COUNT], [], $this->authServer($token));
+        $lastPage = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertCount(self::FIXTURE_LAST_PAGE_COUNT, $lastPage['items']);
     }
 }

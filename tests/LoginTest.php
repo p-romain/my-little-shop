@@ -8,10 +8,8 @@ final class LoginTest extends ApiTestCase
 {
     public function testSuccessfulLogin(): void
     {
-        $this->createUser('login@example.com');
-
         $this->client->jsonRequest('POST', '/api/login', [
-            'email' => 'login@example.com',
+            'email' => 'admin@example.com',
             'password' => 'password',
         ]);
 
@@ -23,10 +21,8 @@ final class LoginTest extends ApiTestCase
 
     public function testLoginWithWrongPasswordReturns401(): void
     {
-        $this->createUser('login@example.com');
-
         $this->client->jsonRequest('POST', '/api/login', [
-            'email' => 'login@example.com',
+            'email' => 'admin@example.com',
             'password' => 'wrong',
         ]);
 

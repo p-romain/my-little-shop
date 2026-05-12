@@ -6,7 +6,7 @@
 /compose-override.yml
 
 /config/secrets/prod/prod.decrypt.private.php
-/config/jwt/private.pem
+/config/jwt/*.pem
 /node_modules/
 /public/build/
 /public/bundles/
@@ -17,18 +17,10 @@
 /.phpunit.result.cache
 /phpunit.xml
 
-npm-debug.log
-yarn-error.log
+/npm-debug.log
+/yarn-error.log
 
-###> friendsofphp/php-cs-fixer ###
 /.php-cs-fixer.php
 /.php-cs-fixer.cache
-###< friendsofphp/php-cs-fixer ###
 
-###> phpstan/phpstan ###
-phpstan.neon
-###< phpstan/phpstan ###
-
-###> lexik/jwt-authentication-bundle ###
-/config/jwt/*.pem
-###< lexik/jwt-authentication-bundle ###
+/phpstan.neon

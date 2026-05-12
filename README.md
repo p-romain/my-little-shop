@@ -2,12 +2,51 @@
 
 Exercice technique de démonstration — API REST Symfony + SPA React pour la gestion d'une chaîne de boutiques de mode.
 
+## Note d'accompagnement
+
+### Ce qui a été réalisé
+
+IA utilisée comme accélérateur : Claude + Codex. Développement itératif, feature par feature, avec recadrage sur l'architecture, Symfony et la qualité du code.
+
+Quelques points structurants :
+
+- **Frontend** : interface React vibe codée, sans tests, hors périmètre mais souhaitée pour visualiser le résultat et créer un effet waouh.
+- **Structure** : Docker, `Makefile`, PostGIS, JWT Lexik, OpenAPI et outillage repris de mes habitudes projet.
+- **Backend** : progression endpoint par endpoint, en commençant par les shops.
+- **Géodistance** : logique déjà utilisée sur un ancien projet, reprise ici pour calculer et trier les boutiques par distance.
+- **Tests** : ajout de tests unitaires, fonctionnels et de cas d'injections SQL courants.
+- **Qualité** : `php-cs-fixer`, `phpstan`, PHPUnit et Dama Doctrine Test Bundle.
+- **Bruno** : collection ajoutée pour tester et debugger l'API sans Postman.
+- **Pagination** : service maison léger, avec réponses encapsulées dans `PaginatedResult`.
+
+#### Cadrage IA
+
+- **Sérialisation** : passage de tableaux JSON mappés manuellement au serializer Symfony avec groupes de sérialisation.
+- **Validation** : remplacement des contrôles `if` par des DTO et le validateur Symfony.
+- **Persistance** : requêtes SQL dans les contrôleurs > centralisées dans les repositories.
+- **SQL** : suppression du SQL brut généré au profit du DQL > vigilance sur les injections.
+- **Fixtures** : remplacement des fixtures PHP par des fixtures YAML Alice/Hautelook.
+
+### Ce qui resterait à faire pour une exploitation pro
+
+- **Organisation** : séparer tests fonctionnels et tests unitaires.
+- **CI/CD** : ajouter une pipeline GitHub ou GitLab.
+- **PHPStan** : rendre l'analyse encore plus stricte.
+- **JWT** : injecter les clés publique/privée autrement que par fichiers dans un contexte de pods distribués.
+- **Droits** : remplacer le contrôle basique actuel par une vraie gestion des rôles et permissions.
+- **Pagination** : revoir l'hydratation de `Shop::distance` et éviter le `$rowHydrator` si possible.
+- **FrontendController** : solution pratique sans Twig, mais inélégante pour une production.
+- **Healthcheck** : vérification des services, pas seulement retourner `200`.
+- **Désérialisation** : pousser les serializers/DTO, notamment pour sortir `hydrate` de `ShopController`.
+- **Cache frontend** : générer des assets versionnés avec hash, plutôt que contourner le cache navigateur côté Nginx.
+- **Documentation IA** : ajouter les fichiers du type `CLAUDE.md` avec consignes et conventions projet.
+
 ## Stack technique
 
 | Couche | Technologie |
 |---|---|
 | Langage backend | PHP 8.5 |
-| Framework | Symfony 7.2 |
+| Framework | Symfony 7.4 |
 | ORM | Doctrine ORM 3 + DBAL 3 |
 | Base de données | PostgreSQL 16 |
 | Authentification | JWT (`lexik/jwt-authentication-bundle`) |
@@ -58,7 +97,7 @@ Elles permettent d'exprimer la **formule de Haversine** entièrement en DQL :
 
 Les tests d'intégration étendent `ApiTestCase` qui :
 - Crée un client HTTP Symfony (`WebTestCase`)
-- Truncate les tables `users` et `product CASCADE` avant chaque test pour l'isolation (pas de dépendance à `dama/doctrine-test-bundle`)
+- S'appuie sur `dama/doctrine-test-bundle` pour isoler les tests via une connexion statique en environnement de test
 - Expose des helpers de création de fixtures de test (`createUser`, `createShop`, `createProduct`, `createStock`)
 
 La méthode `assertShape(array $expectedKeys, array $actual)` vérifie qu'une réponse JSON contient **exactement** les clés attendues — ni plus, ni moins. Cela garantit qu'aucune propriété sensible (ex. hash de mot de passe) ne peut fuiter sans que les tests le détectent.

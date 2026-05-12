@@ -9,7 +9,6 @@ use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 abstract class ApiTestCase extends WebTestCase
 {
@@ -21,17 +20,6 @@ abstract class ApiTestCase extends WebTestCase
         $this->client = static::createClient();
         $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
         $this->entityManager->clear();
-    }
-
-    protected function createUser(string $email = 'user@example.com'): User
-    {
-        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
-        $user = (new User())->setEmail($email)->setPassword('');
-        $user->setPassword($hasher->hashPassword($user, 'password'));
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
-
-        return $user;
     }
 
     protected function getUser(string $email): User
@@ -50,7 +38,7 @@ abstract class ApiTestCase extends WebTestCase
         return $shop;
     }
 
-    protected function getToken(string $email = 'user@example.com'): string
+    protected function getToken(string $email = 'admin@example.com'): string
     {
         $this->client->jsonRequest('POST', '/api/login', ['email' => $email, 'password' => 'password']);
         /** @var array{token: string} $data */

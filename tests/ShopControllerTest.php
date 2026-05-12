@@ -14,7 +14,7 @@ final class ShopControllerTest extends ApiTestCase
 
     // Fixture totals (see fixtures/shops.yaml, fixtures/users.yaml).
     private const FIXTURE_SHOP_COUNT = 30;
-    private const FIXTURE_USER_COUNT = 3;
+    private const FIXTURE_USER_COUNT = 35;
 
     public function testListRequiresAuthentication(): void
     {
@@ -106,6 +106,9 @@ final class ShopControllerTest extends ApiTestCase
         ], [], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('Validation failed.', $data['error']);
+        self::assertArrayHasKey('latitude', array_column($data['violations'], 'message', 'propertyPath'));
     }
 
     public function testListFilterByLocationReturnsNearbyShopsWithDistance(): void
@@ -138,6 +141,11 @@ final class ShopControllerTest extends ApiTestCase
         ], [], $this->authServer($token));
 
         self::assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('Validation failed.', $data['error']);
+        self::assertSame([
+            'radius' => 'latitude, longitude and radius must all be provided together.',
+        ], array_column($data['violations'], 'message', 'propertyPath'));
     }
 
     public function testGetReturnsShop(): void
@@ -187,6 +195,50 @@ final class ShopControllerTest extends ApiTestCase
         $this->client->jsonRequest('POST', '/api/shops', ['name' => 'Shop']);
 
         self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testCreateShopWithEmptyPayloadReturnsAllValidationViolations(): void
+    {
+        $token = $this->getToken('admin@example.com');
+
+        $this->client->request('POST', '/api/shops', [], [], [
+            ...$this->authServer($token),
+            'CONTENT_TYPE' => 'application/json',
+        ], '{}');
+
+        self::assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('Validation failed.', $data['error']);
+        self::assertSame([
+            'name' => 'Name is required.',
+            'address' => 'Address is required.',
+            'latitude' => 'Latitude is required.',
+            'longitude' => 'Longitude is required.',
+            'managerId' => 'Manager is required.',
+        ], array_column($data['violations'], 'message', 'propertyPath'));
+    }
+
+    public function testCreateShopWithBlankFormPayloadReturnsFieldValidationViolations(): void
+    {
+        $token = $this->getToken('admin@example.com');
+
+        $this->client->jsonRequest('POST', '/api/shops', [
+            'name' => '',
+            'address' => '',
+            'latitude' => null,
+            'longitude' => null,
+            'managerId' => null,
+        ], $this->authServer($token));
+
+        self::assertResponseStatusCodeSame(400);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame([
+            'name' => 'Name is required.',
+            'address' => 'Address is required.',
+            'latitude' => 'Latitude is required.',
+            'longitude' => 'Longitude is required.',
+            'managerId' => 'Manager is required.',
+        ], array_column($data['violations'], 'message', 'propertyPath'));
     }
 
     public function testCreateShopWithMissingNameReturnsBadRequest(): void

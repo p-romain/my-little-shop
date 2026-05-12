@@ -148,3 +148,8 @@ App\Entity\Stock:
         product: '@product_<current()>'
         shop: '@shop_warsaw'
         quantity: '<numberBetween(5, 200)>'
+
+    stock_zero:
+        product: '@product_zero_stock'
+        shop: '@shop_paris'
+        quantity: 0

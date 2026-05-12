@@ -34,9 +34,18 @@ final class ShopListQuery
             + (int) (null !== $this->longitude)
             + (int) (null !== $this->radius);
 
-        if ($provided > 0 && $provided < 3) {
+        if (0 === $provided || 3 === $provided) {
+            return;
+        }
+
+        foreach (['latitude', 'longitude', 'radius'] as $property) {
+            if (null !== $this->{$property}) {
+                continue;
+            }
+
             $context
                 ->buildViolation('latitude, longitude and radius must all be provided together.')
+                ->atPath($property)
                 ->addViolation()
             ;
         }

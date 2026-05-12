@@ -9,7 +9,7 @@ final class ShopInput
     #[Assert\NotBlank(message: 'Name is required.')]
     public ?string $name = null;
 
-    #[Assert\NotNull(message: 'Address is required.')]
+    #[Assert\NotBlank(message: 'Address is required.')]
     public ?string $address = null;
 
     #[Assert\NotNull(message: 'Latitude is required.')]

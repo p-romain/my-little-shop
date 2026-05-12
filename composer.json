@@ -15,17 +15,17 @@
         "doctrine/orm": "^3.6.4",
         "lexik/jwt-authentication-bundle": "^3.2",
         "nelmio/api-doc-bundle": "^4.30|^5.10.2",
-        "symfony/console": "7.2.*",
-        "symfony/dotenv": "7.2.*",
+        "symfony/console": "7.4.*",
+        "symfony/dotenv": "7.4.*",
         "symfony/flex": "^2.10",
-        "symfony/framework-bundle": "7.2.*",
+        "symfony/framework-bundle": "7.4.*",
         "symfony/monolog-bundle": "^3.11.2",
-        "symfony/runtime": "7.2.*",
-        "symfony/security-bundle": "7.2.*",
-        "symfony/serializer": "7.2.*",
-        "symfony/validator": "7.2.*",
+        "symfony/runtime": "7.4.*",
+        "symfony/security-bundle": "7.4.*",
+        "symfony/serializer": "7.4.*",
+        "symfony/validator": "7.4.*",
         "symfony/webpack-encore-bundle": "^2.4",
-        "symfony/yaml": "7.2.*"
+        "symfony/yaml": "7.4.*"
     },
     "require-dev": {
         "dama/doctrine-test-bundle": "^8.3",
@@ -35,12 +35,12 @@
         "phpstan/phpstan": "^2.1.54",
         "phpunit/php-code-coverage": "^11.0.12",
         "phpunit/phpunit": "^11.5.55",
-        "symfony/browser-kit": "7.2.*",
-        "symfony/css-selector": "7.2.*",
+        "symfony/browser-kit": "7.4.*",
+        "symfony/css-selector": "7.4.*",
         "symfony/maker-bundle": "^1.67",
-        "symfony/phpunit-bridge": "7.2.*",
-        "symfony/stopwatch": "7.2.*",
-        "symfony/web-profiler-bundle": "7.2.*"
+        "symfony/phpunit-bridge": "7.4.*",
+        "symfony/stopwatch": "7.4.*",
+        "symfony/web-profiler-bundle": "7.4.*"
     },
     "config": {
         "allow-plugins": {
@@ -93,7 +93,7 @@
     "extra": {
         "symfony": {
             "allow-contrib": false,
-            "require": "7.2.*"
+            "require": "7.4.*"
         }
     }
 }

@@ -10,3 +10,7 @@ App\Entity\User:
     user_manager_2:
         email: manager2@example.com
         plainPassword: password
+
+    user_{1..32}:
+        email: 'user<current()>\@example.com'
+        plainPassword: password

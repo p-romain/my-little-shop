@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteShops } from '../hooks/useInfiniteShops';
 import { authorizationHeaders } from '../lib/api';
 import { EmptyState, ErrorBox, FormField, Panel } from './ui';
@@ -11,7 +11,7 @@ function readFiltersFromUrl() {
     const lon = params.get('lon');
     const radius = params.get('radius');
 
-    const hasLocation = lat !== null && lon !== null && radius !== null;
+    const hasLocation = lat !== null || lon !== null || radius !== null;
     const hasName = name !== null && name.trim() !== '';
 
     if (!hasName && !hasLocation) {
@@ -20,9 +20,9 @@ function readFiltersFromUrl() {
 
     return {
         name: hasName ? name : null,
-        latitude: hasLocation ? Number(lat) : null,
-        longitude: hasLocation ? Number(lon) : null,
-        radius: hasLocation ? Number(radius) : null,
+        latitude: lat !== null ? Number(lat) : null,
+        longitude: lon !== null ? Number(lon) : null,
+        radius: radius !== null ? Number(radius) : null,
     };
 }
 
@@ -95,11 +95,12 @@ ${closeScript}
 
 export function ShopsPage({ token }) {
     const [activeFilters, setActiveFilters] = useState(() => readFiltersFromUrl());
-    const { shops, loading, loadingMore, error, hasNextPage, reload, loadMore } = useInfiniteShops(token, activeFilters);
+    const { shops, loading, loadingMore, error, violations, hasNextPage, reload, loadMore } = useInfiniteShops(token, activeFilters);
     const [modalMode, setModalMode] = useState(null);
     const [editingShopId, setEditingShopId] = useState(null);
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [selectedShopId, setSelectedShopId] = useState(null);
+    const filterFieldErrors = useMemo(() => validationErrorsByPath(violations), [violations]);
     const selectedShop = shops.find((shop) => shop.id === selectedShopId) ?? shops.find(hasCoordinates) ?? null;
 
     const hasActiveFilters = activeFilters !== null && (activeFilters.name !== null || activeFilters.latitude !== null);
@@ -114,7 +115,11 @@ export function ShopsPage({ token }) {
         }
         if (activeFilters?.latitude !== null && activeFilters?.latitude !== undefined) {
             params.set('lat', String(activeFilters.latitude));
+        }
+        if (activeFilters?.longitude !== null && activeFilters?.longitude !== undefined) {
             params.set('lon', String(activeFilters.longitude));
+        }
+        if (activeFilters?.radius !== null && activeFilters?.radius !== undefined) {
             params.set('radius', String(activeFilters.radius));
         }
         const search = params.toString();
@@ -131,6 +136,12 @@ export function ShopsPage({ token }) {
             setSelectedShopId((shops.find(hasCoordinates) ?? shops[0]).id);
         }
     }, [selectedShopId, shops]);
+
+    useEffect(() => {
+        if (Object.keys(filterFieldErrors).length > 0) {
+            setFiltersOpen(true);
+        }
+    }, [filterFieldErrors]);
 
     function closeModal() {
         setModalMode(null);
@@ -215,6 +226,7 @@ export function ShopsPage({ token }) {
             {filtersOpen && (
                 <FiltersModal
                     initialFilters={activeFilters}
+                    initialFieldErrors={filterFieldErrors}
                     onClose={() => setFiltersOpen(false)}
                     onApply={(filters) => {
                         setActiveFilters(filters);
@@ -436,6 +448,28 @@ function SingleSelectDropdown({ options, value, onChange, placeholder = 'Selectâ
     );
 }
 
+function FieldError({ message }) {
+    if (!message) {
+        return null;
+    }
+
+    return <p className="mt-1 text-xs text-red-600">{message}</p>;
+}
+
+function validationErrorsByPath(violations) {
+    if (!Array.isArray(violations)) {
+        return {};
+    }
+
+    return violations.reduce((errors, violation) => {
+        if (violation?.propertyPath && violation?.message && !errors[violation.propertyPath]) {
+            errors[violation.propertyPath] = violation.message;
+        }
+
+        return errors;
+    }, {});
+}
+
 function ShopModal({ mode, shopId, token, onClose, onSaved }) {
     const isEdit = mode === 'edit';
     const [form, setForm] = useState({ name: '', address: '', latitude: '', longitude: '', managerId: '' });
@@ -443,6 +477,7 @@ function ShopModal({ mode, shopId, token, onClose, onSaved }) {
     const [loading, setLoading] = useState(isEdit);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
     const suppressSuggestions = useRef(false);
     const addressInputRef = useRef(null);
     const [suggestions, setSuggestions] = useState([]);
@@ -475,6 +510,7 @@ function ShopModal({ mode, shopId, token, onClose, onSaved }) {
         async function loadShop() {
             setLoading(true);
             setError('');
+            setFieldErrors({});
 
             try {
                 const response = await fetch(`/api/shops/${shopId}`, {
@@ -559,6 +595,16 @@ function ShopModal({ mode, shopId, token, onClose, onSaved }) {
 
     function updateField(field, value) {
         setForm((current) => ({ ...current, [field]: value }));
+        setFieldErrors((current) => {
+            if (!current[field]) {
+                return current;
+            }
+
+            const next = { ...current };
+            delete next[field];
+
+            return next;
+        });
     }
 
     function selectSuggestion(suggestion) {
@@ -576,6 +622,8 @@ function ShopModal({ mode, shopId, token, onClose, onSaved }) {
         event.preventDefault();
         setSaving(true);
         setError('');
+        setFieldErrors({});
+        let hasValidationErrors = false;
 
         try {
             const response = await fetch(isEdit ? `/api/shops/${shopId}` : '/api/shops', {
@@ -586,18 +634,26 @@ function ShopModal({ mode, shopId, token, onClose, onSaved }) {
                 },
                 body: JSON.stringify({
                     ...form,
+                    latitude: form.latitude !== '' ? Number(form.latitude) : null,
+                    longitude: form.longitude !== '' ? Number(form.longitude) : null,
                     managerId: form.managerId !== '' ? Number(form.managerId) : null,
                 }),
             });
             const data = await response.json();
 
             if (!response.ok) {
+                const nextFieldErrors = validationErrorsByPath(data.violations);
+                hasValidationErrors = Object.keys(nextFieldErrors).length > 0;
+                setFieldErrors(nextFieldErrors);
+
                 throw new Error(data.error || 'Unable to save this shop.');
             }
 
             onSaved();
         } catch (saveError) {
-            setError(saveError instanceof Error ? saveError.message : 'Unable to save this shop.');
+            if (!hasValidationErrors) {
+                setError(saveError instanceof Error ? saveError.message : 'Unable to save this shop.');
+            }
         } finally {
             setSaving(false);
         }
@@ -618,7 +674,7 @@ function ShopModal({ mode, shopId, token, onClose, onSaved }) {
                     </button>
                 </header>
 
-                <form onSubmit={submit} className="flex flex-col gap-4 p-4">
+                <form onSubmit={submit} noValidate className="flex flex-col gap-4 p-4">
                     {loading ? (
                         <EmptyState label="Loading shop..." />
                     ) : (
@@ -626,11 +682,11 @@ function ShopModal({ mode, shopId, token, onClose, onSaved }) {
                             <FormField label="Name" required>
                                 <input
                                     type="text"
-                                    required
                                     value={form.name}
                                     onChange={(event) => updateField('name', event.target.value)}
                                     className="box-border w-full rounded border border-gray-300 bg-white p-2 text-sm focus:border-blue-500 focus:outline-none"
                                 />
+                                <FieldError message={fieldErrors.name} />
                             </FormField>
 
                             <FormField label="Manager" required>
@@ -641,41 +697,42 @@ function ShopModal({ mode, shopId, token, onClose, onSaved }) {
                                     placeholder="Select a manager..."
                                     loading={users.length === 0 && loading}
                                 />
+                                <FieldError message={fieldErrors.managerId} />
                             </FormField>
 
                             <FormField label="Address" required>
                                 <input
                                     ref={addressInputRef}
                                     type="text"
-                                    required
                                     value={form.address}
                                     onChange={(event) => updateField('address', event.target.value)}
                                     onBlur={() => setTimeout(() => setSuggestions([]), 150)}
                                     className="box-border w-full rounded border border-gray-300 bg-white p-2 text-sm focus:border-blue-500 focus:outline-none"
                                 />
+                                <FieldError message={fieldErrors.address} />
                                 <p className="mt-1 text-xs text-gray-400">Selecting a suggestion will automatically fill in the latitude and longitude.</p>
                             </FormField>
 
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <FormField label="Latitude" required>
                                     <input
-                                        type="number"
-                                        step="any"
-                                        required
+                                        type="text"
+                                        inputMode="decimal"
                                         value={form.latitude}
                                         onChange={(event) => updateField('latitude', event.target.value)}
                                         className="box-border w-full rounded border border-gray-300 bg-white p-2 text-sm focus:border-blue-500 focus:outline-none"
                                     />
+                                    <FieldError message={fieldErrors.latitude} />
                                 </FormField>
                                 <FormField label="Longitude" required>
                                     <input
-                                        type="number"
-                                        step="any"
-                                        required
+                                        type="text"
+                                        inputMode="decimal"
                                         value={form.longitude}
                                         onChange={(event) => updateField('longitude', event.target.value)}
                                         className="box-border w-full rounded border border-gray-300 bg-white p-2 text-sm focus:border-blue-500 focus:outline-none"
                                     />
+                                    <FieldError message={fieldErrors.longitude} />
                                 </FormField>
                             </div>
 
@@ -713,7 +770,7 @@ function ShopModal({ mode, shopId, token, onClose, onSaved }) {
     );
 }
 
-function FiltersModal({ initialFilters, onClose, onApply, token }) {
+function FiltersModal({ initialFilters, initialFieldErrors = {}, onClose, onApply, token }) {
     const [form, setForm] = useState({
         name: initialFilters?.name ?? '',
         address: '',
@@ -722,11 +779,16 @@ function FiltersModal({ initialFilters, onClose, onApply, token }) {
         radius: initialFilters?.radius != null ? String(initialFilters.radius) : '',
     });
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState(initialFieldErrors);
     const [locating, setLocating] = useState(false);
     const suppressSuggestions = useRef(false);
     const addressInputRef = useRef(null);
     const [suggestions, setSuggestions] = useState([]);
     const [dropdownRect, setDropdownRect] = useState(null);
+
+    useEffect(() => {
+        setFieldErrors(initialFieldErrors);
+    }, [initialFieldErrors]);
 
     useEffect(() => {
         if (suppressSuggestions.current) {
@@ -773,6 +835,16 @@ function FiltersModal({ initialFilters, onClose, onApply, token }) {
     function updateField(field, value) {
         setForm((current) => ({ ...current, [field]: value }));
         setError('');
+        setFieldErrors((current) => {
+            if (!current[field]) {
+                return current;
+            }
+
+            const next = { ...current };
+            delete next[field];
+
+            return next;
+        });
     }
 
     function selectSuggestion(suggestion) {
@@ -820,25 +892,18 @@ function FiltersModal({ initialFilters, onClose, onApply, token }) {
     function handleSubmit(event) {
         event.preventDefault();
 
-        const hasLat = form.latitude !== '';
-        const hasLon = form.longitude !== '';
-        const hasRadius = form.radius !== '';
-        const locationCount = [hasLat, hasLon, hasRadius].filter(Boolean).length;
-
-        if (locationCount > 0 && locationCount < 3) {
-            setError('Latitude, longitude and radius must all be filled or all empty.');
-            return;
-        }
-
-        const hasLocation = locationCount === 3;
         const filters = {
             name: form.name.trim() || null,
-            latitude: hasLocation ? Number(form.latitude) : null,
-            longitude: hasLocation ? Number(form.longitude) : null,
-            radius: hasLocation ? Number(form.radius) : null,
+            latitude: form.latitude !== '' ? Number(form.latitude) : null,
+            longitude: form.longitude !== '' ? Number(form.longitude) : null,
+            radius: form.radius !== '' ? Number(form.radius) : null,
         };
 
-        onApply(filters.name === null && filters.latitude === null ? null : filters);
+        onApply(
+            filters.name === null && filters.latitude === null && filters.longitude === null && filters.radius === null
+                ? null
+                : filters,
+        );
     }
 
     function handleReset() {
@@ -860,7 +925,7 @@ function FiltersModal({ initialFilters, onClose, onApply, token }) {
                     </button>
                 </header>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-4">
+                <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 p-4">
                     <FormField label="Name">
                         <input
                             type="text"
@@ -898,21 +963,23 @@ function FiltersModal({ initialFilters, onClose, onApply, token }) {
                     <div className="grid gap-4 sm:grid-cols-2">
                         <FormField label="Latitude">
                             <input
-                                type="number"
-                                step="any"
+                                type="text"
+                                inputMode="decimal"
                                 value={form.latitude}
                                 onChange={(event) => updateField('latitude', event.target.value)}
                                 className="box-border w-full rounded border border-gray-300 bg-white p-2 text-sm focus:border-blue-500 focus:outline-none"
                             />
+                            <FieldError message={fieldErrors.latitude} />
                         </FormField>
                         <FormField label="Longitude">
                             <input
-                                type="number"
-                                step="any"
+                                type="text"
+                                inputMode="decimal"
                                 value={form.longitude}
                                 onChange={(event) => updateField('longitude', event.target.value)}
                                 className="box-border w-full rounded border border-gray-300 bg-white p-2 text-sm focus:border-blue-500 focus:outline-none"
                             />
+                            <FieldError message={fieldErrors.longitude} />
                         </FormField>
                     </div>
 
@@ -930,6 +997,7 @@ function FiltersModal({ initialFilters, onClose, onApply, token }) {
                             <option value="100000">100 km</option>
                             <option value="1000000">1 000 km</option>
                         </select>
+                        <FieldError message={fieldErrors.radius} />
                     </FormField>
 
                     {error && <ErrorBox message={error} />}

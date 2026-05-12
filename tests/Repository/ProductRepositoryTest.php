@@ -5,73 +5,84 @@ declare(strict_types=1);
 namespace App\Tests\Repository;
 
 use App\Entity\Product;
-use App\Entity\Shop;
 use App\Repository\ProductRepository;
-use App\Tests\ApiTestCase;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\QueryBuilder;
+use Doctrine\Persistence\ManagerRegistry;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
-final class ProductRepositoryTest extends ApiTestCase
+final class ProductRepositoryTest extends TestCase
 {
-    public function testListQueryBuilderWithoutShopFilterReturnsEveryProductOrderedById(): void
+    private EntityManagerInterface&MockObject $entityManager;
+    private ProductRepository $repository;
+
+    protected function setUp(): void
     {
-        $products = $this->repository()->listQueryBuilder([])
-            ->setMaxResults(3)
-            ->getQuery()
-            ->getResult()
+        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->entityManager->method('getClassMetadata')->willReturn(new ClassMetadata(Product::class));
+
+        $registry = $this->createMock(ManagerRegistry::class);
+        $registry->method('getManagerForClass')->willReturn($this->entityManager);
+
+        $this->repository = new ProductRepository($registry);
+    }
+
+    public function testListQueryBuilderWithoutShopFilterOnlyOrdersById(): void
+    {
+        $qb = $this->fluentQueryBuilderMock();
+        $qb->expects(self::once())->method('orderBy')->with('p.id', 'ASC')->willReturnSelf();
+        $qb->expects(self::never())->method('where');
+        $qb->expects(self::never())->method('setParameter');
+        $this->entityManager->method('createQueryBuilder')->willReturn($qb);
+
+        $result = $this->repository->listQueryBuilder([]);
+
+        self::assertSame($qb, $result);
+    }
+
+    public function testListQueryBuilderWithShopFilterAddsExistsClauseAndShopIdsParameter(): void
+    {
+        $mainQb = $this->fluentQueryBuilderMock();
+        $mainQb->method('orderBy')->willReturnSelf();
+        $mainQb
+            ->expects(self::once())
+            ->method('where')
+            ->with(self::stringContains('EXISTS ('))
+            ->willReturnSelf()
+        ;
+        $mainQb
+            ->expects(self::once())
+            ->method('setParameter')
+            ->with('shopIds', [42, 43])
+            ->willReturnSelf()
         ;
 
-        self::assertCount(3, $products);
-        self::assertContainsOnlyInstancesOf(Product::class, $products);
-        self::assertLessThan($products[1]->getId(), $products[0]->getId());
-        self::assertLessThan($products[2]->getId(), $products[1]->getId());
-    }
+        $subQb = $this->fluentQueryBuilderMock();
+        $subQb->method('getDQL')->willReturn('SELECT 1 FROM stock');
 
-    public function testListQueryBuilderWithShopFilterReturnsProductsInStockForThatShop(): void
-    {
-        $shop = $this->getShop('Paris Champs-Elysees');
-
-        $products = $this->repository()->listQueryBuilder([(int) $shop->getId()])
-            ->getQuery()
-            ->getResult()
+        $this->entityManager
+            ->method('createQueryBuilder')
+            ->willReturnOnConsecutiveCalls($mainQb, $subQb)
         ;
 
-        self::assertCount(10, $products);
-        self::assertSame(range(1, 10), array_map(
-            static fn (Product $product): int => self::fixtureProductNumber($product),
-            $products,
-        ));
+        $result = $this->repository->listQueryBuilder([42, 43]);
+
+        self::assertSame($mainQb, $result);
     }
 
-    public function testListQueryBuilderWithShopFilterExcludesProductsWithOnlyZeroQuantityStock(): void
+    /**
+     * @return QueryBuilder&MockObject
+     */
+    private function fluentQueryBuilderMock(): QueryBuilder
     {
-        $shop = $this->getShop('Paris Champs-Elysees');
-        $product = $this->repository()->findOneBy([], ['id' => 'ASC']);
-        self::assertNotNull($product);
+        $qb = $this->createMock(QueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('andWhere')->willReturnSelf();
+        $qb->method('addSelect')->willReturnSelf();
 
-        $stock = $this->entityManager->getRepository(\App\Entity\Stock::class)->findOneBy([
-            'product' => $product,
-            'shop' => $shop,
-        ]);
-        self::assertNotNull($stock);
-        $stock->setQuantity(0);
-        $this->entityManager->flush();
-
-        $products = $this->repository()->listQueryBuilder([(int) $shop->getId()])
-            ->getQuery()
-            ->getResult()
-        ;
-
-        self::assertNotContains($product, $products);
-    }
-
-    private function repository(): ProductRepository
-    {
-        return $this->entityManager->getRepository(Product::class);
-    }
-
-    private static function fixtureProductNumber(Product $product): int
-    {
-        self::assertMatchesRegularExpression('/\s(\d+)$/', (string) $product->getName());
-
-        return (int) preg_replace('/^.*\s(\d+)$/', '$1', (string) $product->getName());
+        return $qb;
     }
 }

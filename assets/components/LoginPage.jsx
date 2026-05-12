@@ -46,15 +46,14 @@ export function LoginPage({ token, onLogin }) {
                 My Little Shop
             </h1>
 
-            <form onSubmit={submit}>
+            <form onSubmit={submit} noValidate>
                 <div className="mb-4">
                     <label htmlFor="email" className="mb-1 block text-sm font-medium">Email</label>
                     <input
                         id="email"
-                        type="email"
+                        type="text"
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
-                        required
                         className="box-border w-full rounded border border-gray-300 p-2 focus:border-blue-500 focus:outline-none"
                     />
                 </div>
@@ -66,7 +65,6 @@ export function LoginPage({ token, onLogin }) {
                         type="password"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
-                        required
                         className="box-border w-full rounded border border-gray-300 p-2 focus:border-blue-500 focus:outline-none"
                     />
                 </div>

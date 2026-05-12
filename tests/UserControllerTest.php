@@ -10,6 +10,10 @@ final class UserControllerTest extends ApiTestCase
     private const ENVELOPE_KEYS = ['items', 'total', 'pages'];
     private const USER_KEYS = ['id', 'email'];
 
+    // Fixture totals (see fixtures/users.yaml): admin + manager1 + manager2 + user_{1..32}.
+    private const FIXTURE_USER_COUNT = 35;
+    private const FIXTURE_PAGE_SIZE = 30;
+
     public function testListRequiresAuthentication(): void
     {
         $this->client->request('GET', '/api/users');
@@ -19,7 +23,6 @@ final class UserControllerTest extends ApiTestCase
 
     public function testListShape(): void
     {
-        $this->createUser();
         $token = $this->getToken();
 
         $this->client->request('GET', '/api/users', [], [], $this->authServer($token));
@@ -33,34 +36,29 @@ final class UserControllerTest extends ApiTestCase
 
     public function testListReturnsUsers(): void
     {
-        $user = $this->createUser();
         $token = $this->getToken();
 
         $this->client->request('GET', '/api/users', [], [], $this->authServer($token));
 
         self::assertResponseIsSuccessful();
         $data = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertCount(1, $data['items']);
-        self::assertSame($user->getEmail(), $data['items'][0]['email']);
-        self::assertSame(1, $data['total']);
-        self::assertSame(1, $data['pages']);
+        self::assertContains('admin@example.com', array_column($data['items'], 'email'));
+        self::assertSame(self::FIXTURE_USER_COUNT, $data['total']);
+        self::assertSame(2, $data['pages']);
     }
 
     public function testListPagination(): void
     {
-        for ($i = 1; $i <= 31; ++$i) {
-            $this->createUser("user{$i}@example.com");
-        }
-        $token = $this->getToken('user1@example.com');
+        $token = $this->getToken();
 
         $this->client->request('GET', '/api/users', ['page' => 1], [], $this->authServer($token));
         $page1 = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertCount(30, $page1['items']);
-        self::assertSame(31, $page1['total']);
+        self::assertCount(self::FIXTURE_PAGE_SIZE, $page1['items']);
+        self::assertSame(self::FIXTURE_USER_COUNT, $page1['total']);
         self::assertSame(2, $page1['pages']);
 
         $this->client->request('GET', '/api/users', ['page' => 2], [], $this->authServer($token));
         $page2 = json_decode((string) $this->client->getResponse()->getContent(), true);
-        self::assertCount(1, $page2['items']);
+        self::assertCount(self::FIXTURE_USER_COUNT - self::FIXTURE_PAGE_SIZE, $page2['items']);
     }
 }

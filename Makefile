@@ -45,6 +45,7 @@ test: .env compose.override.yaml ## run cs checks, phpstan and phpunit coverage
 	$(PHP) vendor/bin/phpstan analyse --memory-limit=256M
 	$(PHP) bin/console doctrine:database:create --if-not-exists --env=test
 	$(PHP) bin/console doctrine:migrations:migrate --no-interaction --env=test
+	$(PHP) bin/console hautelook:fixtures:load --no-interaction --env=test
 	$(PHP) vendor/bin/phpunit --coverage-html var/coverage
 
 help: ## show this help

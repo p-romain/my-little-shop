@@ -7,60 +7,105 @@ namespace App\Tests\Repository;
 use App\Dto\ShopListQuery;
 use App\Entity\Shop;
 use App\Repository\ShopRepository;
-use App\Tests\ApiTestCase;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\QueryBuilder;
+use Doctrine\Persistence\ManagerRegistry;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
-final class ShopRepositoryTest extends ApiTestCase
+final class ShopRepositoryTest extends TestCase
 {
-    public function testListQueryBuilderWithoutFiltersReturnsShopsOrderedByNewestFirst(): void
-    {
-        $shops = $this->repository()->listQueryBuilder(new ShopListQuery())
-            ->setMaxResults(3)
-            ->getQuery()
-            ->getResult()
-        ;
+    private EntityManagerInterface&MockObject $entityManager;
+    private ShopRepository $repository;
 
-        self::assertCount(3, $shops);
-        self::assertContainsOnlyInstancesOf(Shop::class, $shops);
-        self::assertGreaterThan($shops[1]->getId(), $shops[0]->getId());
-        self::assertGreaterThan($shops[2]->getId(), $shops[1]->getId());
+    protected function setUp(): void
+    {
+        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->entityManager->method('getClassMetadata')->willReturn(new ClassMetadata(Shop::class));
+
+        $registry = $this->createMock(ManagerRegistry::class);
+        $registry->method('getManagerForClass')->willReturn($this->entityManager);
+
+        $this->repository = new ShopRepository($registry);
     }
 
-    public function testListQueryBuilderFiltersByNameCaseInsensitive(): void
+    public function testListQueryBuilderWithoutFiltersOrdersByNewestFirst(): void
+    {
+        $qb = $this->fluentQueryBuilderMock();
+        $qb->expects(self::once())->method('orderBy')->with('s.id', 'DESC')->willReturnSelf();
+        $qb->expects(self::never())->method('andWhere');
+        $qb->expects(self::never())->method('setParameter');
+        $this->entityManager->method('createQueryBuilder')->willReturn($qb);
+
+        $result = $this->repository->listQueryBuilder(new ShopListQuery());
+
+        self::assertSame($qb, $result);
+    }
+
+    public function testListQueryBuilderWithNameFilterAppliesCaseInsensitiveLike(): void
     {
         $query = new ShopListQuery();
-        $query->setName('  PARIS  ');
+        $query->setName('  Paris  ');
 
-        $shops = $this->repository()->listQueryBuilder($query)
-            ->getQuery()
-            ->getResult()
+        $qb = $this->fluentQueryBuilderMock();
+        $qb->expects(self::once())
+            ->method('andWhere')
+            ->with('LOWER(s.name) LIKE LOWER(:name)')
+            ->willReturnSelf()
         ;
+        $qb->expects(self::once())
+            ->method('setParameter')
+            ->with('name', '%Paris%')
+            ->willReturnSelf()
+        ;
+        $qb->expects(self::once())->method('orderBy')->with('s.id', 'DESC')->willReturnSelf();
+        $this->entityManager->method('createQueryBuilder')->willReturn($qb);
 
-        self::assertCount(1, $shops);
-        self::assertSame('Paris Champs-Elysees', $shops[0]->getName());
+        $result = $this->repository->listQueryBuilder($query);
+
+        self::assertSame($qb, $result);
     }
 
-    public function testListQueryBuilderFiltersByDistanceAndSelectsDistance(): void
+    public function testListQueryBuilderWithDistanceFilterAddsDistanceSelectAndOrdersByIt(): void
     {
         $query = new ShopListQuery();
         $query->latitude = 48.8566;
         $query->longitude = 2.3522;
-        $query->radius = 1_000_000;
+        $query->radius = 10_000;
 
-        $rows = $this->repository()->listQueryBuilder($query)
-            ->getQuery()
-            ->getResult()
+        $qb = $this->fluentQueryBuilderMock();
+        $qb->expects(self::exactly(3))->method('andWhere')->willReturnSelf();
+        $qb->expects(self::exactly(3))
+            ->method('setParameter')
+            ->willReturnSelf()
         ;
+        $qb->expects(self::once())
+            ->method('addSelect')
+            ->with(self::stringContains('as distance'))
+            ->willReturnSelf()
+        ;
+        $qb->expects(self::once())
+            ->method('orderBy')
+            ->with('distance', 'ASC')
+            ->willReturnSelf()
+        ;
+        $this->entityManager->method('createQueryBuilder')->willReturn($qb);
 
-        self::assertNotEmpty($rows);
-        self::assertIsArray($rows[0]);
-        self::assertInstanceOf(Shop::class, $rows[0][0]);
-        self::assertArrayHasKey('distance', $rows[0]);
-        self::assertSame('Paris Champs-Elysees', $rows[0][0]->getName());
-        self::assertLessThan(10_000, (float) $rows[0]['distance']);
+        $result = $this->repository->listQueryBuilder($query);
+
+        self::assertSame($qb, $result);
     }
 
-    private function repository(): ShopRepository
+    /**
+     * @return QueryBuilder&MockObject
+     */
+    private function fluentQueryBuilderMock(): QueryBuilder
     {
-        return $this->entityManager->getRepository(Shop::class);
+        $qb = $this->createMock(QueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+
+        return $qb;
     }
 }

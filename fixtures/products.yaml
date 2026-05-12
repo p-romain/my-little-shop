@@ -2,3 +2,7 @@ App\Entity\Product:
     product_{1..100}:
         name: '<randomElement(["T-Shirt", "Oxford Shirt", "Linen Shirt", "Denim Jacket", "Bomber Jacket", "Hoodie", "Sweatshirt", "Polo Shirt", "Chino Pants", "Cargo Pants", "Straight Jeans", "Wide Jeans", "Pleated Skirt", "Midi Dress", "Wrap Dress", "Tailored Blazer", "Wool Coat", "Trench Coat", "Cardigan", "Crewneck Sweater"])> <randomElement(["Black", "Navy", "Ivory", "Olive", "Grey", "Denim Blue", "Burgundy", "Camel", "Forest Green", "Stone"])> <current()>'
         picture: 'https://picsum.photos/seed/my-little-shop-clothing-<current()>/800/600'
+
+    product_zero_stock:
+        name: 'Zero Stock Product'
+        picture: 'https://picsum.photos/seed/zero/800/600'

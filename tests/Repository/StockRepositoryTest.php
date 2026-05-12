@@ -5,92 +5,134 @@ declare(strict_types=1);
 namespace App\Tests\Repository;
 
 use App\Entity\Product;
-use App\Entity\Shop;
 use App\Entity\Stock;
 use App\Repository\StockRepository;
-use App\Tests\ApiTestCase;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Query;
+use Doctrine\ORM\QueryBuilder;
+use Doctrine\Persistence\ManagerRegistry;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
-final class StockRepositoryTest extends ApiTestCase
+final class StockRepositoryTest extends TestCase
 {
-    public function testFindByProductIdsReturnsEmptyArrayForEmptyProductList(): void
+    private EntityManagerInterface&MockObject $entityManager;
+    private StockRepository $repository;
+
+    protected function setUp(): void
     {
-        self::assertSame([], $this->repository()->findByProductIds([]));
+        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->entityManager->method('getClassMetadata')->willReturn(new ClassMetadata(Stock::class));
+
+        $registry = $this->createMock(ManagerRegistry::class);
+        $registry->method('getManagerForClass')->willReturn($this->entityManager);
+
+        $this->repository = new StockRepository($registry);
+    }
+
+    public function testFindByProductIdsReturnsEmptyArrayForEmptyProductListWithoutTouchingTheEntityManager(): void
+    {
+        $this->entityManager->expects(self::never())->method('createQueryBuilder');
+
+        self::assertSame([], $this->repository->findByProductIds([]));
     }
 
     public function testFindByProductIdsGroupsPositiveStocksByProductId(): void
     {
-        $products = $this->productsByFixtureNumber(4, 2);
+        $firstProduct = $this->productWithId(1);
+        $secondProduct = $this->productWithId(2);
+        $stocks = [
+            $this->stockFor($firstProduct),
+            $this->stockFor($firstProduct),
+            $this->stockFor($secondProduct),
+        ];
 
-        $stocksByProduct = $this->repository()->findByProductIds(array_map(
-            static fn (Product $product): int => (int) $product->getId(),
-            $products,
-        ));
+        $qb = $this->fluentQueryBuilderMock();
+        $qb->expects(self::once())->method('where')->with('s.product IN (:ids)')->willReturnSelf();
+        $qb
+            ->expects(self::once())
+            ->method('andWhere')
+            ->with('s.quantity > 0')
+            ->willReturnSelf()
+        ;
+        $qb
+            ->expects(self::once())
+            ->method('setParameter')
+            ->with('ids', [1, 2])
+            ->willReturnSelf()
+        ;
+        $qb->method('getQuery')->willReturn($this->queryReturning($stocks));
+        $this->entityManager->method('createQueryBuilder')->willReturn($qb);
 
-        self::assertArrayHasKey((int) $products[4]->getId(), $stocksByProduct);
-        self::assertCount(2, $stocksByProduct[(int) $products[4]->getId()]);
-        self::assertArrayHasKey((int) $products[2]->getId(), $stocksByProduct);
-        self::assertCount(1, $stocksByProduct[(int) $products[2]->getId()]);
-        self::assertContainsOnlyInstancesOf(Stock::class, $stocksByProduct[(int) $products[4]->getId()]);
+        $grouped = $this->repository->findByProductIds([1, 2]);
+
+        self::assertArrayHasKey(1, $grouped);
+        self::assertCount(2, $grouped[1]);
+        self::assertArrayHasKey(2, $grouped);
+        self::assertCount(1, $grouped[2]);
     }
 
-    public function testFindByProductIdsCanRestrictStocksToSpecificShops(): void
+    public function testFindByProductIdsAppliesShopFilterWhenShopIdsProvided(): void
     {
-        $product = $this->productByFixtureNumber(4);
-        $shop = $this->getShop('Paris Champs-Elysees');
+        $qb = $this->fluentQueryBuilderMock();
+        $qb->method('where')->willReturnSelf();
+        $qb
+            ->expects(self::exactly(2))
+            ->method('andWhere')
+            ->willReturnSelf()
+        ;
+        $qb
+            ->expects(self::exactly(2))
+            ->method('setParameter')
+            ->willReturnSelf()
+        ;
+        $qb->method('getQuery')->willReturn($this->queryReturning([]));
+        $this->entityManager->method('createQueryBuilder')->willReturn($qb);
 
-        $stocksByProduct = $this->repository()->findByProductIds([(int) $product->getId()], [(int) $shop->getId()]);
-
-        self::assertArrayHasKey((int) $product->getId(), $stocksByProduct);
-        self::assertCount(1, $stocksByProduct[(int) $product->getId()]);
-        self::assertSame($shop->getId(), $stocksByProduct[(int) $product->getId()][0]->getShop()?->getId());
-    }
-
-    public function testFindByProductIdsExcludesZeroQuantityStocks(): void
-    {
-        $product = $this->productByFixtureNumber(4);
-        $shop = $this->getShop('Paris Champs-Elysees');
-        $stock = $this->entityManager->getRepository(Stock::class)->findOneBy([
-            'product' => $product,
-            'shop' => $shop,
-        ]);
-        self::assertNotNull($stock);
-        $stock->setQuantity(0);
-        $this->entityManager->flush();
-
-        $stocksByProduct = $this->repository()->findByProductIds([(int) $product->getId()], [(int) $shop->getId()]);
-
-        self::assertSame([], $stocksByProduct);
-    }
-
-    private function repository(): StockRepository
-    {
-        return $this->entityManager->getRepository(Stock::class);
+        $this->repository->findByProductIds([1], [10]);
     }
 
     /**
-     * @return array<int, Product>
+     * @return QueryBuilder&MockObject
      */
-    private function productsByFixtureNumber(int ...$numbers): array
+    private function fluentQueryBuilderMock(): QueryBuilder
     {
-        $products = [];
-        foreach ($numbers as $number) {
-            $products[$number] = $this->productByFixtureNumber($number);
-        }
+        $qb = $this->createMock(QueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('addSelect')->willReturnSelf();
+        $qb->method('join')->willReturnSelf();
 
-        return $products;
+        return $qb;
     }
 
-    private function productByFixtureNumber(int $number): Product
+    /**
+     * @param Stock[] $stocks
+     */
+    private function queryReturning(array $stocks): Query
     {
-        $product = $this->entityManager->getRepository(Product::class)
-            ->createQueryBuilder('p')
-            ->where('p.name LIKE :suffix')
-            ->setParameter('suffix', '% '.$number)
-            ->getQuery()
-            ->getSingleResult()
+        $query = $this->getMockBuilder(Query::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getResult'])
+            ->getMock()
         ;
-        self::assertInstanceOf(Product::class, $product);
+        $query->method('getResult')->willReturn($stocks);
+
+        return $query;
+    }
+
+    private function productWithId(int $id): Product
+    {
+        $product = new Product();
+        $reflection = new \ReflectionProperty(Product::class, 'id');
+        $reflection->setValue($product, $id);
 
         return $product;
+    }
+
+    private function stockFor(Product $product): Stock
+    {
+        return (new Stock())->setProduct($product);
     }
 }

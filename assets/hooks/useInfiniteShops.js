@@ -10,6 +10,7 @@ export function useInfiniteShops(token, filters = null) {
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState('');
+    const [violations, setViolations] = useState([]);
     const loadingRef = useRef(false);
 
     const filterName = filters?.name ?? null;
@@ -31,6 +32,7 @@ export function useInfiniteShops(token, filters = null) {
         }
 
         setError('');
+        setViolations([]);
 
         try {
             const url = new URL('/api/shops', window.location.origin);
@@ -42,7 +44,13 @@ export function useInfiniteShops(token, filters = null) {
 
             if (filterLat !== null) {
                 url.searchParams.set('latitude', String(filterLat));
+            }
+
+            if (filterLon !== null) {
                 url.searchParams.set('longitude', String(filterLon));
+            }
+
+            if (filterRadius !== null) {
                 url.searchParams.set('radius', String(filterRadius));
             }
 
@@ -50,11 +58,16 @@ export function useInfiniteShops(token, filters = null) {
                 headers: authorizationHeaders(token),
             });
 
+            const json = await response.json();
+
             if (!response.ok) {
-                throw new Error('Unable to load shops.');
+                if (Array.isArray(json.violations)) {
+                    setViolations(json.violations);
+                }
+
+                throw new Error(json.error || 'Unable to load shops.');
             }
 
-            const json = await response.json();
             const nextShops = json.items ?? [];
 
             setShops((current) => (replace ? nextShops : [...current, ...nextShops]));
@@ -82,7 +95,7 @@ export function useInfiniteShops(token, filters = null) {
     }, [reload]);
 
     return useMemo(
-        () => ({ shops, loading, loadingMore, error, hasNextPage, reload, loadMore }),
-        [error, hasNextPage, loadMore, loading, loadingMore, reload, shops]
+        () => ({ shops, loading, loadingMore, error, violations, hasNextPage, reload, loadMore }),
+        [error, hasNextPage, loadMore, loading, loadingMore, reload, shops, violations]
     );
 }
